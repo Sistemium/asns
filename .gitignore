@@ -1,0 +1,8 @@
+
+*.lock
+
+*.phar
+
+keys.php
+
+vendor/*

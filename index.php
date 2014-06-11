@@ -5,8 +5,8 @@ include 'keys.php';
 use Aws\Sns\SnsClient;
 
 $snsClient = SnsClient::factory(array(
-	'key' => $key,
-	'secret' => $secret,
+	'key' => $key, //AWS_ACCESS_KEY_ID
+	'secret' => $secret, //AWS_SECRET_ACCESS_KEY
 	'region' => 'eu-west-1'
 	));
 
@@ -22,32 +22,40 @@ $endpoints = $snsClient->listEndpointsByPlatformApplication(array('PlatformAppli
 
 // Display all of the endpoints for the iOS application
 
-foreach ($endpoints['Endpoints'] as $endpoint)
-{
+foreach ($endpoints['Endpoints'] as $endpoint) {
+
     $endpointArn = $endpoint['EndpointArn'];
     // echo $endpointArn;
+
 }
 
 
 // iOS: Send a message to each endpoint
 
-$push_message = 'test message';
+foreach ($endpoints['Endpoints'] as $endpoint) {
 
-foreach ($endpoints['Endpoints'] as $endpoint)
-{
     $endpointArn = $endpoint['EndpointArn'];
 
-    try
-    {
-        $snsClient->publish(array('Message' => $push_message,
-            'TargetArn' => $endpointArn));
+    try {
+
+        // $push_message = 'test message';
+        // $snsClient->publish(array('Message' => $push_message, 'TargetArn' => $endpointArn));
+
+        $aps = json_encode(array('aps'=> array('alert'=> 'testAlert'), 'id'=> '123'));
+        $message = json_encode(array('APNS_SANDBOX'=> $aps));
+        $payload =  array('TargetArn'=> $endpointArn, 'MessageStructure'=> 'json', 'Message'=> $message);
+        $snsClient->publish($payload);
 
         echo "<strong>Success:</strong> ".$endpointArn."<br/>";
+
     }
-    catch (Exception $e)
-    {
+
+    catch (Exception $e) {
+
         echo "<strong>Failed:</strong> ".$endpointArn."<br/><strong>Error:</strong> ".$e->getMessage()."<br/>";
+
     }
+
 }
 
 ?>

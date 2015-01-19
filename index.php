@@ -10,56 +10,72 @@ $snsClient = SnsClient::factory(array(
 	'region' => 'eu-west-1'
 	));
 
-// 0 — for ActionManager; 1 — iSistemium
+function getArn($snsClient) {
 
-$appArn = $snsClient->listPlatformApplications()['PlatformApplications'][1]['PlatformApplicationArn'];
+    $appArns = $snsClient->listPlatformApplications()['PlatformApplications'];
 
-// echo $appArn;
+    foreach ($appArns as $arn) {
 
+        $tempArn = $arn['PlatformApplicationArn'];
 
-// Get the application's endpoints
+        if (strpos($tempArn,'APNS_SANDBOX/iSistemium') !== false) {
 
-$endpoints = $snsClient->listEndpointsByPlatformApplication(array('PlatformApplicationArn' => $appArn));
+            echo 'ARN: ' . $tempArn . '<br />';
+            return $tempArn;
 
+        }
 
-// Display all of the endpoints for the iOS application
-
-foreach ($endpoints['Endpoints'] as $endpoint) {
-
-    $endpointArn = $endpoint['EndpointArn'];
-    // echo $endpointArn;
+    }
 
 }
 
+function getEndpoint($appArn, $snsClient, $device) {
 
-// iOS: Send a message to each endpoint
+    $endpoints = $snsClient->listEndpointsByPlatformApplication(array('PlatformApplicationArn' => $appArn));
 
-foreach ($endpoints['Endpoints'] as $endpoint) {
+    foreach ($endpoints['Endpoints'] as $endpoint) {
 
-    $endpointArn = $endpoint['EndpointArn'];
+        $endpointArn = $endpoint['EndpointArn'];
 
-    try {
+        if (strpos($endpointArn, $device) !== false) {
+            
+            echo 'ENDPOINT: ' . $endpointArn . '<br />';
+            return $endpointArn;
 
-        // $push_message = 'test message';
-        // $snsClient->publish(array('Message' => $push_message, 'TargetArn' => $endpointArn));
-
-        // $aps = json_encode(array('aps'=> array('content-available'=> 1)));
-        // $aps = json_encode(array('aps'=> array('alert'=> 'Notification', 'badge'=> 1), 'id'=> '123'));
-
-        $aps = json_encode(array('aps'=> array('alert'=> 'Notification', 'badge'=> 1, 'sound'=>'default')));
-        $message = json_encode(array('APNS_SANDBOX'=> $aps));
-        $payload =  array('TargetArn'=> $endpointArn, 'MessageStructure'=> 'json', 'Message'=> $message);
-        $snsClient->publish($payload);
-
-        echo "<strong>Success:</strong> ".$endpointArn."<br/>";
+        }
 
     }
 
-    catch (Exception $e) {
+}
 
-        echo "<strong>Failed:</strong> ".$endpointArn."<br/><strong>Error:</strong> ".$e->getMessage()."<br/>";
+$appArn = getArn($snsClient);
+$endpointArn = getEndpoint($appArn, $snsClient, $device);
 
-    }
+
+try {
+
+    // $push_message = 'test message';
+    // $snsClient->publish(array('Message' => $push_message, 'TargetArn' => $endpointArn));
+
+     $aps = json_encode(array('aps'=> array('content-available'=> 1)));
+    // $aps = json_encode(array('aps'=> array('alert'=> 'Notification', 'badge'=> 1), 'id'=> '123'));
+
+    //$aps = json_encode(array('aps'=> array('alert'=> 'Notification', 'badge'=> 1, 'sound'=>'default')));
+    $message = json_encode(array('APNS_SANDBOX'=> $aps));
+    $payload =  array('TargetArn'=> $endpointArn, 'MessageStructure'=> 'json', 'Message'=> $message);
+    $snsClient->publish($payload);
+
+    echo "<strong>Success:</strong> ".$endpointArn."<br/>";
+	echo "payload: ";
+	var_dump($payload);
+	echo "<br />";
+	echo time();
+
+}
+
+catch (Exception $e) {
+
+    echo "<strong>Failed:</strong> ".$endpointArn."<br/><strong>Error:</strong> ".$e->getMessage()."<br/>";
 
 }
 

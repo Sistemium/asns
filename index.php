@@ -66,10 +66,12 @@ try {
     $snsClient->publish($payload);
 
     echo "<strong>Success:</strong> ".$endpointArn."<br/>";
-	echo "payload: ";
+	echo "PAYLOAD: ";
 	var_dump($payload);
 	echo "<br />";
-	echo time();
+
+	date_default_timezone_set('Europe/Moscow');
+	echo date('l jS \of F Y h:i:s A');
 
 }
 
